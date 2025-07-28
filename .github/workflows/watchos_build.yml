@@ -1,38 +1,45 @@
 name: Build WatchOS App
 
 on:
-  workflow_dispatch:  # Ручной запуск
+  workflow_dispatch:
   push:
-    branches: [ main ]  # Автозапуск при push в main
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: macos-latest  # GitHub предоставляет macOS с последним Xcode
-    timeout-minutes: 30    # Лимит времени выполнения
+    runs-on: macos-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Select Xcode
+      - name: Setup Xcode
         run: |
           sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
+          xcrun simctl list devices | grep Watch
 
-      - name: Build for WatchOS Simulator
+      - name: Show Scheme List
         run: |
-          xcodebuild \
+          xcodebuild -project Test.xcodeproj -list
+
+      - name: Build Watch App
+        run: |
+          set -o pipefail && xcodebuild \
             -project Test.xcodeproj \
             -scheme "Test WatchKit App" \
             -configuration Debug \
             -sdk watchsimulator \
-            -derivedDataPath ./build \
-            clean build
+            -destination 'platform=watchOS Simulator,name=Apple Watch Series 9' \
+            ONLY_ACTIVE_ARCH=NO \
+            BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+            clean build | xcpretty
 
-      - name: Upload Build Artifact
+      - name: Upload Artifacts
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: WatchOS-App-Build
-          path: ./build/**/*.app  # Загружаем только .app файлы
+          name: WatchOS-Build
+          path: build/Build/**/*.app
           retention-days: 1
-          if-no-files-found: error  # Прервать если артефактов нет
