@@ -19,21 +19,33 @@ jobs:
           sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
 
-      - name: Build Correct Watch Target
+      - name: Build Watch Components
         run: |
-          # Собираем WatchKit Extension вместо Watch App
+          # Сначала собираем iOS хостовое приложение
           xcodebuild \
             -project Test.xcodeproj \
-            -target "Test WatchKit Extension" \
+            -scheme "Test WatchKit App" \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath ./build \
+            ONLY_ACTIVE_ARCH=NO \
+            clean build
+
+          # Затем собираем WatchKit Extension
+          xcodebuild \
+            -project Test.xcodeproj \
+            -scheme "Test WatchKit App" \
             -configuration Debug \
             -sdk watchsimulator \
             -derivedDataPath ./build \
             ONLY_ACTIVE_ARCH=NO \
             clean build
 
-      - name: Upload Results
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: WatchApp-Build
-          path: ./build/Build/**/*.appex
+          path: |
+            ./build/Build/**/*.app
+            ./build/Build/**/*.appex
           retention-days: 1
