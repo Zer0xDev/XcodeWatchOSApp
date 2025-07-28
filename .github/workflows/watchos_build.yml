@@ -19,22 +19,21 @@ jobs:
           sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
 
-      - name: Build Watch App Extension
+      - name: Build Correct Watch Target
         run: |
+          # Собираем WatchKit Extension вместо Watch App
           xcodebuild \
             -project Test.xcodeproj \
-            -scheme "Test WatchKit App" \
+            -target "Test WatchKit Extension" \
             -configuration Debug \
             -sdk watchsimulator \
-            -destination 'platform=watchOS Simulator,name=Apple Watch Series 9' \
+            -derivedDataPath ./build \
             ONLY_ACTIVE_ARCH=NO \
             clean build
 
-      - name: Find and upload built app
+      - name: Upload Results
         uses: actions/upload-artifact@v4
         with:
           name: WatchApp-Build
-          path: |
-            build/Debug-watchsimulator/Test.app
-            build/Debug-watchsimulator/Test WatchKit App.app
+          path: ./build/Build/**/*.appex
           retention-days: 1
