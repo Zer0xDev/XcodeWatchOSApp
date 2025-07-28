@@ -1,49 +1,40 @@
-name: Build Watch App
+name: Build WatchOS App
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
+    timeout-minutes: 30
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set Xcode Version
-        run: sudo xcode-select -s /Applications/Xcode_16.app
+      - name: Setup Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
 
-      - name: Build Watch App for Simulator
+      - name: Build Watch App Extension
         run: |
           xcodebuild \
-            -project ./Test.xcodeproj \
+            -project Test.xcodeproj \
             -scheme "Test WatchKit App" \
-            -sdk watchsimulator \
             -configuration Debug \
-            clean build \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            -sdk watchsimulator \
+            -destination 'platform=watchOS Simulator,name=Apple Watch Series 9' \
+            ONLY_ACTIVE_ARCH=NO \
+            clean build
 
-      - name: Build and Archive Watch App for Device
-        run: |
-          xcodebuild \
-            -project ./Test.xcodeproj \
-            -scheme "Test WatchKit App" \
-            -sdk watchos \
-            -configuration Release \
-            clean archive \
-            -archivePath ./build/Test.xcarchive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Upload Build Artifact
+      - name: Find and upload built app
         uses: actions/upload-artifact@v4
         with:
-          name: watch-app-archive
-          path: ./build/Test.xcarchive
+          name: WatchApp-Build
+          path: |
+            build/Debug-watchsimulator/Test.app
+            build/Debug-watchsimulator/Test WatchKit App.app
+          retention-days: 1
