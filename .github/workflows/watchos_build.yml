@@ -1,0 +1,38 @@
+name: Build WatchOS App
+
+on:
+  workflow_dispatch:  # Ручной запуск
+  push:
+    branches: [ main ]  # Автозапуск при push в main
+
+jobs:
+  build:
+    runs-on: macos-latest  # GitHub предоставляет macOS с Xcode
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Install CocoaPods (если есть Podfile)
+        run: |
+          gem install cocoapods
+          pod install
+
+      - name: Build for WatchOS Simulator
+        run: |
+          xcodebuild \
+            -workspace Test.xcodeproj \  # Или -project YOUR_PROJECT.xcodeproj
+            -scheme "Test WatchKit App" \         # Название схемы (например, "WatchApp")
+            -configuration Debug \
+            -sdk watchsimulator \                  # Для симулятора (для устройства используйте `watchos`)
+            -derivedDataPath ./build \
+            clean build
+
+      - name: Upload Artifact (опционально)
+        uses: actions/upload-artifact@v3
+        with:
+          name: WatchOS-App
+          path: ./build
