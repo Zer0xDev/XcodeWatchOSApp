@@ -1,45 +1,49 @@
-name: Build WatchOS App
+name: Build Watch App
 
 on:
-  workflow_dispatch:
   push:
+    branches: [ main ]
+  pull_request:
     branches: [ main ]
 
 jobs:
   build:
-    runs-on: macos-latest
-    timeout-minutes: 30
+    runs-on: macos-14
 
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Xcode
-        run: |
-          sudo xcode-select -s /Applications/Xcode.app
-          xcodebuild -version
-          xcrun simctl list devices | grep Watch
+      - name: Set Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_16.app
 
-      - name: Show Scheme List
+      - name: Build Watch App for Simulator
         run: |
-          xcodebuild -project Test.xcodeproj -list
-
-      - name: Build Watch App
-        run: |
-          set -o pipefail && xcodebuild \
-            -project Test.xcodeproj \
+          xcodebuild \
+            -project ./Test.xcodeproj \
             -scheme "Test WatchKit App" \
-            -configuration Debug \
             -sdk watchsimulator \
-            -destination 'platform=watchOS Simulator,name=Apple Watch Series 9' \
-            ONLY_ACTIVE_ARCH=NO \
-            BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
-            clean build | xcpretty
+            -configuration Debug \
+            clean build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
 
-      - name: Upload Artifacts
-        if: success()
+      - name: Build and Archive Watch App for Device
+        run: |
+          xcodebuild \
+            -project ./Test.xcodeproj \
+            -scheme "Test WatchKit App" \
+            -sdk watchos \
+            -configuration Release \
+            clean archive \
+            -archivePath ./build/Test.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WatchOS-Build
-          path: build/Build/**/*.app
-          retention-days: 1
+          name: watch-app-archive
+          path: ./build/Test.xcarchive
