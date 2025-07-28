@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest  # GitHub предоставляет macOS с Xcode
+    runs-on: macos-latest  # GitHub предоставляет свежий Xcode
     
     steps:
       - name: Checkout code
@@ -16,23 +16,19 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app
 
-      - name: Install CocoaPods (если есть Podfile)
-        run: |
-          gem install cocoapods
-          pod install
-
       - name: Build for WatchOS Simulator
         run: |
           xcodebuild \
-            -workspace Test.xcodeproj \  # Или -project YOUR_PROJECT.xcodeproj
-            -scheme "Test WatchKit App" \         # Название схемы (например, "WatchApp")
+            -project Test.xcodeproj \
+            -scheme "Test WatchKit App" \
             -configuration Debug \
-            -sdk watchsimulator \                  # Для симулятора (для устройства используйте `watchos`)
+            -sdk watchsimulator \
             -derivedDataPath ./build \
             clean build
 
-      - name: Upload Artifact (опционально)
-        uses: actions/upload-artifact@v3
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: WatchOS-App
+          name: WatchOS-App-Build
           path: ./build
+          retention-days: 1  # Автоудаление через 1 день
