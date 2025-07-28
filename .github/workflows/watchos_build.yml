@@ -7,14 +7,17 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest  # GitHub предоставляет свежий Xcode
-    
+    runs-on: macos-latest  # GitHub предоставляет macOS с последним Xcode
+    timeout-minutes: 30    # Лимит времени выполнения
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
 
       - name: Build for WatchOS Simulator
         run: |
@@ -30,5 +33,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: WatchOS-App-Build
-          path: ./build
-          retention-days: 1  # Автоудаление через 1 день
+          path: ./build/**/*.app  # Загружаем только .app файлы
+          retention-days: 1
+          if-no-files-found: error  # Прервать если артефактов нет
